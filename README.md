@@ -1,5 +1,5 @@
 # stronger_parameters
-![CI](https://github.com/zendesk/stronger_parameters/workflows/CI/badge.svg)
+[![CI status](https://github.com/zendesk/stronger_parameters/actions/workflows/actions.yml/badge.svg?branch=master)](https://github.com/zendesk/stronger_parameters/actions/workflows/actions.yml?query=branch%3Amaster)
 
 This is an extension of `strong_parameters` with added type checking and conversion.
 
@@ -240,7 +240,6 @@ curl -I 'http://localhost/api/users/1.json' -X POST -d '{ "user": { "id": 1 } }'
 => X-StrongerParameters-API-Warn: Removed restricted keys ["user.id"] from parameters
 ```
 
-
 ## Types
 
 | Syntax                         | (Simplified) Definition                                                                    |
@@ -248,6 +247,10 @@ curl -I 'http://localhost/api/users/1.json' -X POST -d '{ "user": { "id": 1 } }'
 | Parameters.string              | value.is_a?(String)                                                                        |
 | Parameters.integer             | value.is_a?(Fixnum) or '-1'                                                                |
 | Parameters.float               | value.is_a?(Float) or '-1.2'                                                               |
+| Parameters.date                | value.is_a?(Date) or '2014-05-13' or '13.05.2014'                                          |
+| Parameters.date_iso8601        | value is a date that conforms to ISO8601: '2014-05-13'                                     |
+| Parameters.time                | value.is_a?(Time) or '2014-05-13' or '2015-03-31 14:34:56 +0000'                           |
+| Parameters.time_iso8601        | value is a time that conforms to ISO8601: '2014-05-13' or '2015-03-31T14:34:56Z'           |
 | Parameters.datetime            | value.is_a?(DateTime) or '2014-05-13' or '2015-03-31T14:34:56Z'                            |
 | Parameters.datetime_iso8601    | value is a date that conforms to ISO8601: '2014-05-13' or '2015-03-31T14:34:56Z'           |
 | Parameters.regexp(/foo/)       | value =~ regexp                                                                            |
@@ -268,3 +271,19 @@ curl -I 'http://localhost/api/users/1.json' -X POST -d '{ "user": { "id": 1 } }'
 | Parameters.file                | File, StringIO, Rack::Test::UploadedFile, ActionDispatch::Http::UploadedFile or subclasses |
 | Parameters.decimal(8,2)        | value is a String, Integer or Float with a precision of 9 and scale of 2                   |
 | Parameters.hex                  | value is a String that matches the hexadecimal format |
+| Parameters.ulid                 | value is a String of length 26 with only Crockford Base32 symbols |
+
+## Development
+
+### Releasing a new version
+
+```
+git checkout master && git fetch origin && git reset --hard origin/master
+bundle exec rake bump:<patch|minor|major>
+# -> manually edit changelog
+git commit -a --amend --no-edit
+bundle exec rake release
+```
+
+- [github action](.github/workflows/ruby-gem-publication.yml) will release a new version to rubygems.org
+- approve the new version [here](https://github.com/zendesk/stronger_parameters/actions/workflows/ruby-gem-publication.yml)

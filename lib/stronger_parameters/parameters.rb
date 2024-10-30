@@ -1,11 +1,13 @@
 # frozen_string_literal: true
-require 'action_pack'
 
-require 'action_controller/base'
-require 'action_controller/metal/strong_parameters'
+require "action_pack"
 
-require 'stronger_parameters/constraints'
-require 'stronger_parameters/errors'
+require "action_controller/base"
+require "action_controller/api"
+require "action_controller/metal/strong_parameters"
+
+require "stronger_parameters/constraints"
+require "stronger_parameters/errors"
 
 module StrongerParameters
   module Parameters
@@ -82,7 +84,7 @@ module StrongerParameters
       def enumeration(*allowed)
         EnumerationConstraint.new(*allowed)
       end
-      alias enum enumeration
+      alias_method :enum, :enumeration
 
       def boolean
         BooleanConstraint.new
@@ -104,6 +106,22 @@ module StrongerParameters
         NilStringConstraint.new
       end
 
+      def date
+        DateConstraint.new
+      end
+
+      def date_iso8601
+        DateIso8601Constraint.new
+      end
+
+      def time
+        TimeConstraint.new
+      end
+
+      def time_iso8601
+        TimeIso8601Constraint.new
+      end
+
       def datetime
         DateTimeConstraint.new
       end
@@ -123,11 +141,15 @@ module StrongerParameters
       def hex
         HexConstraint.new
       end
+
+      def ulid
+        UlidConstraint.new
+      end
     end
 
-    def hash_filter_with_stronger_parameters(params, filter)
+    def hash_filter_with_stronger_parameters(params, filter, **kwargs)
       stronger_filter = ActiveSupport::HashWithIndifferentAccess.new
-      other_filter    = ActiveSupport::HashWithIndifferentAccess.new
+      other_filter = ActiveSupport::HashWithIndifferentAccess.new
 
       filter.each do |k, v|
         if v.is_a?(Constraint)
@@ -137,7 +159,7 @@ module StrongerParameters
         end
       end
 
-      hash_filter_without_stronger_parameters(params, other_filter)
+      hash_filter_without_stronger_parameters(params, other_filter, **kwargs)
 
       stronger_filter.each_key do |key|
         value = fetch(key, nil)
@@ -152,14 +174,14 @@ module StrongerParameters
         if key?(key)
           result = constraint.value(value)
         elsif constraint.required?
-          result = InvalidValue.new(nil, 'must be present')
+          result = InvalidValue.new(nil, "must be present")
         else
           next # uncovered
         end
 
         if result.is_a?(InvalidValue)
           name = "invalid_parameter.action_controller"
-          ActiveSupport::Notifications.publish(name, key: key, value: value, message: result.message)
+          ActiveSupport::Notifications.instrument(name, key: key, value: value, message: result.message)
 
           action = self.class.action_on_invalid_parameters
           case action
@@ -196,7 +218,11 @@ module StrongerParameters
       # TODO: this is not consistent with the behavior of raising ActionController::UnpermittedParameters
       # should have the same render vs raise behavior in test/dev ... see permitted_parameters_test.rb
       rescue_from(StrongerParameters::InvalidParameter) do |e|
-        render plain: e.message, status: :bad_request # uncovered
+        if request.format.to_s.include?("json")
+          render json: {error: e.message}, status: :bad_request
+        else
+          render plain: e.message, status: :bad_request
+        end
       end
     end
   end
@@ -204,3 +230,4 @@ end
 
 ActionController::Parameters.include StrongerParameters::Parameters
 ActionController::Base.include StrongerParameters::ControllerSupport
+ActionController::API.include StrongerParameters::ControllerSupport

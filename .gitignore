@@ -15,3 +15,4 @@ test/tmp
 test/version_tmp
 tmp
 .idea
+/gemfiles/rails_main.gemfile.lock

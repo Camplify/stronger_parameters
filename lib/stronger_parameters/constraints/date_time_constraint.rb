@@ -1,5 +1,6 @@
 # frozen_string_literal: true
-require 'stronger_parameters/constraint'
+
+require "stronger_parameters/constraint"
 
 module StrongerParameters
   class DateTimeConstraint < Constraint
@@ -9,7 +10,7 @@ module StrongerParameters
       begin
         DateTime.parse v
       rescue ArgumentError, TypeError
-        StrongerParameters::InvalidValue.new(v, "must be a date")
+        StrongerParameters::InvalidValue.new(v, "must be a datetime")
       end
     end
   end

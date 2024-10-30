@@ -1,13 +1,14 @@
 # frozen_string_literal: true
-require_relative '../test_helper'
 
-SingleCov.covered!
+require_relative "../test_helper"
+
+SingleCov.covered! uncovered: 3 # Covered in test/controller_test.rb
 
 describe StrongerParameters::Parameters do
   describe ".anything" do
     subject { ActionController::Parameters.anything }
 
-    permits '1'
+    permits "1"
     permits 1
     permits []
   end
@@ -101,6 +102,34 @@ describe StrongerParameters::Parameters do
     rejects 1
   end
 
+  describe ".date" do
+    subject { ActionController::Parameters.date }
+
+    permits "01.01.2016", as: Date.parse("2016-01-01")
+    rejects 1
+  end
+
+  describe ".date_iso8601" do
+    subject { ActionController::Parameters.date_iso8601 }
+
+    permits "2016-01-01", as: Date.iso8601("2016-01-01")
+    rejects 1
+  end
+
+  describe ".time" do
+    subject { ActionController::Parameters.time }
+
+    permits "2016-01-01 00:00:00 +0000", as: Time.parse("2016-01-01 00:00:00 +0000")
+    rejects 1
+  end
+
+  describe ".time_iso8601" do
+    subject { ActionController::Parameters.time_iso8601 }
+
+    permits "2016-01-01T00:00:00Z", as: Time.iso8601("2016-01-01T00:00:00Z")
+    rejects 1
+  end
+
   describe ".datetime" do
     subject { ActionController::Parameters.datetime }
 
@@ -129,62 +158,68 @@ describe StrongerParameters::Parameters do
     rejects "abg"
   end
 
+  describe ".ulid" do
+    subject { ActionController::Parameters.ulid }
+    permits "01GTJ6C0NF1MQX0KFZMS1RHTYF"
+    rejects "o-GTJ6C0NF1MQX0KFZMS1RHTYF"
+  end
+
   describe ".bigid" do
     subject { ActionController::Parameters.bigid }
 
-    permits '1', as: 1
+    permits "1", as: 1
     permits 1
     permits (2**63) - 1
 
     rejects(-1)
-    rejects 'a'
+    rejects "a"
     rejects 2**63
   end
 
   describe ".id" do
     subject { ActionController::Parameters.id }
 
-    permits '1', as: 1
+    permits "1", as: 1
     permits 1
     permits (2**31) - 1
 
     rejects(-1)
-    rejects 'a'
+    rejects "a"
     rejects 2**31
   end
 
   describe ".ubigid" do
     subject { ActionController::Parameters.ubigid }
 
-    permits '1', as: 1
+    permits "1", as: 1
     permits 1
     permits (2**64) - 1
 
     rejects(-1)
-    rejects 'a'
+    rejects "a"
     rejects 2**64
   end
 
   describe ".uid" do
     subject { ActionController::Parameters.uid }
 
-    permits '1', as: 1
+    permits "1", as: 1
     permits 1
     permits (2**32) - 1
 
     rejects(-1)
-    rejects 'a'
+    rejects "a"
     rejects 2**32
   end
 
   describe ".integer32" do
     subject { ActionController::Parameters.integer32 }
 
-    permits '1', as: 1
+    permits "1", as: 1
     permits (2**31) - 1
     permits(-2**31)
 
-    rejects 'a'
+    rejects "a"
     rejects 2**31
     rejects(-2**31 - 1)
   end
@@ -192,11 +227,11 @@ describe StrongerParameters::Parameters do
   describe ".integer64" do
     subject { ActionController::Parameters.integer64 }
 
-    permits '1', as: 1
+    permits "1", as: 1
     permits (2**63) - 1
     permits(-2**63)
 
-    rejects 'a'
+    rejects "a"
     rejects 2**63
     rejects(-2**63 - 1)
   end
@@ -257,8 +292,8 @@ describe StrongerParameters::Parameters do
     end
 
     it "passes nested constraints in non-constraint" do
-      params(value: {key: 123}).permit(value: {key: ActionController::Parameters.integer32}).to_h.
-        must_equal "value" => {"key" => 123}
+      params(value: {key: 123}).permit(value: {key: ActionController::Parameters.integer32}).to_h
+        .must_equal "value" => {"key" => 123}
     end
 
     it "fails nested constraints in non-constraint" do
@@ -268,8 +303,8 @@ describe StrongerParameters::Parameters do
     end
 
     it "passes nested constraints in non-constraint array" do
-      params(value: [{key: 123}]).permit(value: [{key: ActionController::Parameters.integer32}]).to_h.
-        must_equal "value" => [{"key" => 123}]
+      params(value: [{key: 123}]).permit(value: [{key: ActionController::Parameters.integer32}]).to_h
+        .must_equal "value" => [{"key" => 123}]
     end
 
     it "fails nested constraints in non-constraint array" do
@@ -293,7 +328,7 @@ describe StrongerParameters::Parameters do
         params(value: nil).permit(value: ActionController::Parameters.integer32)
       end
 
-      def with_allow_nil_for_everything(value = true) # rubocop:disable Style/OptionalBooleanParameter
+      def with_allow_nil_for_everything(value = true)
         old = ActionController::Parameters.allow_nil_for_everything
         ActionController::Parameters.allow_nil_for_everything = value
         yield
